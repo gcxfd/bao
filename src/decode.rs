@@ -140,8 +140,8 @@ impl VerifyState {
             return Err(Error::HashMismatch);
         }
         self.stack.pop();
-        self.stack.push(right_child.into());
-        self.stack.push(left_child.into());
+        self.stack.push(right_child);
+        self.stack.push(left_child);
         self.parser.advance_parent();
         Ok(())
     }
@@ -430,11 +430,9 @@ impl<T: Read + Seek, O: Read + Seek> DecoderShared<T, O> {
                 self.input.seek(SeekFrom::Start(content_pos))?;
                 outboard.seek(SeekFrom::Start(outboard_pos))?;
             }
-        } else {
-            if let Some(encoding_position) = bookkeeping.underlying_seek() {
-                let position_u64: u64 = encode::cast_offset(encoding_position)?;
-                self.input.seek(SeekFrom::Start(position_u64))?;
-            }
+        } else if let Some(encoding_position) = bookkeeping.underlying_seek() {
+            let position_u64: u64 = encode::cast_offset(encoding_position)?;
+            self.input.seek(SeekFrom::Start(position_u64))?;
         }
         let next = self.state.seek_bookkeeping_done(bookkeeping);
         Ok(next)

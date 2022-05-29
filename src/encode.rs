@@ -1123,11 +1123,9 @@ impl<T: Read + Seek, O: Read + Seek> SliceExtractor<T, O> {
                     self.input.seek(SeekFrom::Start(content_pos))?;
                     outboard.seek(SeekFrom::Start(outboard_pos))?;
                 }
-            } else {
-                if let Some(encoding_position) = bookkeeping.underlying_seek() {
-                    self.input
-                        .seek(SeekFrom::Start(cast_offset(encoding_position)?))?;
-                }
+            } else if let Some(encoding_position) = bookkeeping.underlying_seek() {
+                self.input
+                    .seek(SeekFrom::Start(cast_offset(encoding_position)?))?;
             }
             let next_read = self.parser.seek_bookkeeping_done(bookkeeping);
             match next_read {
@@ -1325,8 +1323,8 @@ mod test {
         for &case in crate::test::TEST_CASES {
             dbg!(case);
             let input = &buf[..case];
-            let expected = blake3::hash(&input);
-            let found = drive_state(&input);
+            let expected = blake3::hash(input);
+            let found = drive_state(input);
             assert_eq!(expected, found, "hashes don't match");
         }
     }

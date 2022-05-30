@@ -178,15 +178,13 @@ fn decode(args: &Args) -> Result<(), Error> {
             generic_decoder = bao::decode::Decoder::new_outboard(input, outboard, &hash);
             decoder = &mut generic_decoder;
         }
+    } else if let Some(offset) = args.flag_start {
+        file_decoder = bao::decode::Decoder::new(input.require_file()?, &hash);
+        file_decoder.seek(io::SeekFrom::Start(offset))?;
+        decoder = &mut file_decoder;
     } else {
-        if let Some(offset) = args.flag_start {
-            file_decoder = bao::decode::Decoder::new(input.require_file()?, &hash);
-            file_decoder.seek(io::SeekFrom::Start(offset))?;
-            decoder = &mut file_decoder;
-        } else {
-            generic_decoder = bao::decode::Decoder::new(input, &hash);
-            decoder = &mut generic_decoder;
-        }
+        generic_decoder = bao::decode::Decoder::new(input, &hash);
+        decoder = &mut generic_decoder;
     }
     if let Some(count) = args.flag_count {
         let mut taker = decoder.take(count);
@@ -222,7 +220,7 @@ fn slice(args: &Args) -> Result<(), Error> {
 fn decode_slice(args: &Args) -> Result<(), Error> {
     let input = open_input(&args.arg_input)?;
     let mut output = open_output(&args.arg_output)?;
-    let hash = parse_hash(&args)?;
+    let hash = parse_hash(args)?;
     let mut decoder = bao::decode::SliceDecoder::new(input, &hash, args.arg_start, args.arg_count);
     allow_broken_pipe(copy_reader_to_writer(&mut decoder, &mut output))?;
     Ok(())
@@ -246,7 +244,7 @@ enum Input {
 impl Input {
     fn require_file(self) -> Result<File, Error> {
         match self {
-            Input::Stdin => Err(err_msg(format!("input must be a real file"))),
+            Input::Stdin => Err(err_msg("input must be a real file".to_string())),
             Input::File(file) => Ok(file),
         }
     }
@@ -283,7 +281,7 @@ enum Output {
 impl Output {
     fn require_file(self) -> Result<File, Error> {
         match self {
-            Output::Stdout => Err(err_msg(format!("output must be a real file"))),
+            Output::Stdout => Err(err_msg("output must be a real file".to_string())),
             Output::File(file) => Ok(file),
         }
     }
@@ -342,7 +340,7 @@ fn maybe_memmap_input(input: &Input) -> Result<Option<memmap::Mmap>, Error> {
         let map = unsafe {
             memmap::MmapOptions::new()
                 .len(metadata.len() as usize)
-                .map(&in_file)?
+                .map(in_file)?
         };
         Some(map)
     })
